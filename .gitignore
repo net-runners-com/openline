@@ -1,0 +1,23 @@
+# linejs auth tokens — LINE アカウントへのフルアクセス権。絶対にコミットしない
+storage.json
+**/storage.json
+.auth
+run.log
+**/run.log
+
+# deps
+node_modules/
+bot/node_modules/
+bot/bun.lock
+bot/.npmrc
+
+# cloned upstream repos
+linejs/
+legy-go-selfbot-dev/
+
+# env
+.env
+.env.*
+
+# LINE profile dump (mid / displayName など個人情報)
+bot/profile-backup.json
