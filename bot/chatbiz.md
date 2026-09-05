@@ -32,7 +32,7 @@ OA Manager アプリ（`com.linecorp.lineoa`）は WebView で `chat.line.biz` �
 
 **OA userId はチャンネル専用の ID。** 個人アカウント(linejs)の友だち mid とは別名前空間で、
 linejs では使えない（照合で0件確認済み）。沈黙フォロワーに OA 名義で届ける非 Messaging API
-経路は存在しない。届けたいなら Messaging API push（`oa.ts`、メッセージ枠消費）のみ。
+経路は存在しない。届けたいなら Messaging API push（メッセージ枠消費）のみ。
 
 ## エンドポイント（bot = `Ub4aa0ca3051d9abc64e21e982ec40537`）
 
@@ -72,7 +72,7 @@ await chatbizChats();                 // 会話一覧（chatId + 最終メッセ
 await chatbizSend('U7b3419...', '本文'); // 送信
 ```
 
-本人（竹内大登＝ひろと）の chatId: `U7b34195526d1a5aabe2d75e2e5ca1ec8`
+テスト送信先の chatId 例: `U00000000000000000000000000000000`（会話一覧 `chatbizChats()` の chatId を使う）
 
 ## カードタイプメッセージ（2026-09-01 実測で確定）
 

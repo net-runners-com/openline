@@ -7,7 +7,6 @@ bun install
 bun run send.ts      # メッセージ送信（初回は LINE_EMAIL/LINE_PASSWORD or QR ログイン、以後 storage.json のトークン）
 bun run list.ts      # 友だち一覧
 NEW_NAME=xxx bun run rename.ts   # 表示名変更
-bun run oa.ts list|send          # 公式アカウント経由（line-lake REST、LINELAKE_API_KEY 必須）
 ```
 
 - `chatbiz.md` / `chatbiz-send.js`: chat.line.biz 内部 API メモとブラウザコンソール用スクリプト
