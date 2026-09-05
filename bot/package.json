@@ -7,8 +7,5 @@
   },
   "peerDependencies": {
     "typescript": "^5"
-  },
-  "dependencies": {
-    "@evex/linejs": "npm:@jsr/evex__linejs"
   }
 }
