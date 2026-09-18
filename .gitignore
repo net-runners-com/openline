@@ -1,6 +1,8 @@
 # linejs auth tokens — LINE アカウントへのフルアクセス権。絶対にコミットしない
 storage.json
 **/storage.json
+storage.*.json
+**/storage.*.json
 .auth
 run.log
 **/run.log
@@ -9,7 +11,6 @@ run.log
 node_modules/
 bot/node_modules/
 bot/bun.lock
-bot/.npmrc
 
 # cloned upstream repos
 linejs/
