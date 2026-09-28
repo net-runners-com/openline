@@ -22,6 +22,7 @@ if (EMU) {
 
 let pinTask: Promise<void> | undefined;
 const storage = new FileStorage(STORAGE);
+const DEVICE = (process.env.DEVICE ?? (await storage.get(".device")) ?? "DESKTOPWIN") as any;
 const client = await loginWithPassword(
 	{
 		email: EMAIL,
@@ -31,9 +32,10 @@ const client = await loginWithPassword(
 			if (EMU) pinTask = enterPin(pin).catch((e) => console.error(`自動入力に失敗: ${e.message}(手で入力してください)`));
 		},
 	},
-	{ device: "DESKTOPWIN" as const, storage },
+	{ device: DEVICE, storage },
 );
 await storage.set(".auth", client.authToken);
+await storage.set(".device", DEVICE);
 const p = await client.getMyProfile();
 console.log("LOGGED_IN_AS:", p.displayName, p.mid, `→ ${STORAGE}`);
 await pinTask; // ダイアログ閉じまで待つ

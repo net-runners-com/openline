@@ -27,7 +27,8 @@ const LOGIN_CMD = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : "
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 if (typeof cached !== "string") throw new Error(`未ログイン(${STORAGE})。\`${LOGIN_CMD}\` で QR ログインしてください。`);
-const client = await loginWithAuthToken(cached, { device: "DESKTOPWIN" as const, storage });
+const DEVICE = ((process.env.DEVICE ?? (await storage.get(".device"))) ?? "DESKTOPWIN") as any;
+const client = await loginWithAuthToken(cached, { device: DEVICE, storage });
 await storage.set(".auth", client.authToken);
 const me = await client.getMyProfile();
 console.log("LOGGED_IN_AS:", me.displayName, me.mid);

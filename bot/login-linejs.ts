@@ -5,11 +5,13 @@ import { loginWithQR } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
 const storage = new FileStorage(STORAGE);
+const DEVICE = (process.env.DEVICE ?? (await storage.get(".device")) ?? "DESKTOPWIN") as any;
 const client = await loginWithQR({
   onReceiveQRUrl(url) { console.log("QR_URL:", url); },
   onPincodeRequest(pin) { console.log("PINCODE:", pin); },
-}, { device: "DESKTOPWIN" as const, storage });
+}, { device: DEVICE, storage });
 await storage.set(".auth", client.authToken);
+await storage.set(".device", DEVICE);
 const p = await client.getMyProfile();
 console.log("LOGGED_IN_AS:", p.displayName, p.mid, `→ ${STORAGE}`);
 process.exit(0);

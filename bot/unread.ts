@@ -15,7 +15,8 @@ const N = Number(process.env.N ?? 3);
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 if (typeof cached !== "string") { console.error(`未ログイン(${STORAGE})。\`${LOGIN}\` でログインしてください。`); process.exit(1); }
-const client = await loginWithAuthToken(cached, { device: "DESKTOPWIN" as const, storage }).catch((e) => {
+const DEVICE = ((process.env.DEVICE ?? (await storage.get(".device"))) ?? "DESKTOPWIN") as any;
+const client = await loginWithAuthToken(cached, { device: DEVICE, storage }).catch((e) => {
 	console.error(`ログイン失敗(トークン失効?)。\`${LOGIN}\` で再ログイン。\n${String(e).slice(0, 200)}`); process.exit(1);
 });
 await storage.set(".auth", client.authToken);

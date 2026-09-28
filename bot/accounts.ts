@@ -34,7 +34,7 @@ switch (cmd) {
 			let name = "";
 			try {
 				const storage = new FileStorage(`./${file}`);
-				const client = await loginWithAuthToken((await storage.get(".auth")) as string, { device: "DESKTOPWIN" as const, storage });
+				const client = await loginWithAuthToken((await storage.get(".auth")) as string, { device: (((await storage.get(".device")) ?? "DESKTOPWIN")) as any, storage });
 				await storage.set(".auth", client.authToken);
 				name = (await client.getMyProfile()).displayName;
 			} catch {
