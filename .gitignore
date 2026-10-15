@@ -22,3 +22,7 @@ legy-go-selfbot-dev/
 
 # LINE profile dump (mid / displayName など個人情報)
 bot/profile-backup.json
+
+# webtrace のキャプチャ(HAR=認証情報を含む)とスクラッチ
+.webtrace-auth/
+test.txt
