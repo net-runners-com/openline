@@ -1,9 +1,9 @@
 // 個人LINE(linejs)の未読/新着メッセージを見る CLI。読み取りのみ・既読はつけない。
 //
-//   bun run inbox.ts                 # メイン(storage.json)を監視。新着を表示し続ける
-//   ACCOUNT=sub2 bun run inbox.ts    # 別アカウント(storage.sub2.json)を監視
-//   POLL=15 bun run inbox.ts         # ポーリング間隔(秒) 既定 30
-//   bun run inbox.ts --json          # 1件1行の JSON。Monitor + PushNotification 連携用
+//   bun run src/read/inbox.ts                 # メイン(storage/main.json)を監視。新着を表示し続ける
+//   ACCOUNT=sub2 bun run src/read/inbox.ts    # 別アカウント(storage/sub2.json)を監視
+//   POLL=15 bun run src/read/inbox.ts         # ポーリング間隔(秒) 既定 30
+//   bun run src/read/inbox.ts --json          # 1件1行の JSON。Monitor + PushNotification 連携用
 //
 // 方式: `getMessageBoxes(unreadOnly=true)` を定期的に叩き、前回スナップショットとの diff を出す。
 // client.listen() は実機デバイスと長polling の revision を奪い合うため、同じ auth の daemon では
@@ -14,8 +14,8 @@ import { FileStorage } from "@evex/linejs/storage";
 
 const JSON_MODE = process.argv.includes("--json");
 const POLL_SEC = Math.max(5, Number(process.env.POLL ?? 30));
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
-const LOGIN = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : ""}bun run login-linejs.ts`;
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
+const LOGIN = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : ""}bun run src/auth/login-linejs.ts`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 if (typeof cached !== "string") { console.error(`未ログイン(${STORAGE})。\`${LOGIN}\` でログインしてください。`); process.exit(1); }

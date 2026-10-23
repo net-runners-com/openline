@@ -1,11 +1,11 @@
 // 個人LINE(linejs)のトーク履歴を吸い出して JSONL/JSON で保存する。
 // 営業DM(表示名メモに "jn" タグ)を送った相手のログ収集が主目的。全友だちも可。
 //
-//   bun run dump-logs.ts               # "jn" タグの相手だけ(既定)
-//   TAG= bun run dump-logs.ts          # TAG 空 → 全友だち
-//   PER=300 bun run dump-logs.ts       # 1トークあたり最大取得件数(既定 300)
-//   OUTDIR=out/foo bun run dump-logs.ts
-//   ACCOUNT=sub bun run dump-logs.ts   # 別アカウント(storage.sub.json)で実行
+//   bun run src/read/dump-logs.ts               # "jn" タグの相手だけ(既定)
+//   TAG= bun run src/read/dump-logs.ts          # TAG 空 → 全友だち
+//   PER=300 bun run src/read/dump-logs.ts       # 1トークあたり最大取得件数(既定 300)
+//   OUTDIR=out/foo bun run src/read/dump-logs.ts
+//   ACCOUNT=sub bun run src/read/dump-logs.ts   # 別アカウント(storage/sub.json)で実行
 //
 // 出力(既定 ./out/oplogs-<ts>/): messages.jsonl(1行1メッセージ, 復号済み) と contacts.json。
 // E2EE メッセージは client.base.e2ee で復号。読み取りのみ・送信はしない。
@@ -22,8 +22,8 @@ const GAP_MS = Number(process.env.GAP_MS ?? 700);
 const OUTDIR = process.env.OUTDIR ?? `./out/oplogs-${Date.now()}`;
 const I64_MAX = 9223372036854775807n;
 
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
-const LOGIN_CMD = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : ""}bun run login-linejs.ts`;
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
+const LOGIN_CMD = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : ""}bun run src/auth/login-linejs.ts`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 if (typeof cached !== "string") throw new Error(`未ログイン(${STORAGE})。\`${LOGIN_CMD}\` で QR ログインしてください。`);

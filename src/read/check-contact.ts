@@ -2,8 +2,8 @@
 import { loginWithAuthToken } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 const MID = process.argv[2];
-if (!MID) { console.error("usage: bun run check-contact.ts <mid>"); process.exit(1); }
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
+if (!MID) { console.error("usage: bun run src/read/check-contact.ts <mid>"); process.exit(1); }
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 const DEVICE = ((process.env.DEVICE ?? (await storage.get(".device"))) ?? "DESKTOPWIN") as any;

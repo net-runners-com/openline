@@ -1,12 +1,12 @@
 // 全(or 一定数)メッセージボックスを走査してキーワード検索。
-//   bun run search-messages.ts <keyword> [per] [maxBoxes]
+//   bun run src/read/search-messages.ts <keyword> [per] [maxBoxes]
 import { loginWithAuthToken } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 const Q = (process.argv[2] ?? "").toLowerCase();
 const PER = Number(process.argv[3] ?? 200);
 const MAX_BOXES = Number(process.argv[4] ?? 100);
 const I64_MAX = 9223372036854775807n;
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 const DEVICE = ((process.env.DEVICE ?? (await storage.get(".device"))) ?? "DESKTOPWIN") as any;

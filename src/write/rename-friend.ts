@@ -1,9 +1,9 @@
 // 個人LINE(linejs)で友だちの表示名(メモ名/オーバーライド)を変える CLI。既定は dry-run。
 // 自分のアドレス帳上の呼び方だけ変わる。相手にも、友だちリストの表示名(相手自身の設定)にも影響しない。
 //
-//   bun run rename-friend.ts <相手> -n "新しい名前"            # dry-run(表示のみ)
-//   bun run rename-friend.ts <相手> -n "新しい名前" --yes       # 反映
-//   bun run rename-friend.ts <相手> --clear --yes               # オーバーライド解除(相手の本名表示に戻す)
+//   bun run src/write/rename-friend.ts <相手> -n "新しい名前"            # dry-run(表示のみ)
+//   bun run src/write/rename-friend.ts <相手> -n "新しい名前" --yes       # 反映
+//   bun run src/write/rename-friend.ts <相手> --clear --yes               # オーバーライド解除(相手の本名表示に戻す)
 //
 // <相手> は表示名の部分一致(友だち)か mid。
 import { loginWithAuthToken } from "@evex/linejs";
@@ -19,13 +19,13 @@ const { values: opt, positionals } = parseArgs({
 	},
 });
 function die(m: string): never { console.error(m); process.exit(1); }
-if (positionals.length !== 1) die('usage: bun run rename-friend.ts <相手の名前|mid> (-n "新しい名前" | --clear) [--yes]');
+if (positionals.length !== 1) die('usage: bun run src/write/rename-friend.ts <相手の名前|mid> (-n "新しい名前" | --clear) [--yes]');
 if (!opt.clear && !opt.name) die("`-n <新しい名前>` か `--clear` を指定してください。");
 if (opt.clear && opt.name) die("`-n` と `--clear` は同時指定できません。");
 const WHO = positionals[0];
 const NEW = opt.clear ? "" : (opt.name ?? "");
 
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 if (typeof cached !== "string") die(`未ログイン(${STORAGE})。login-linejs.ts でログインしてください。`);

@@ -1,22 +1,22 @@
 // 個人LINE(linejs)で自分が送ったメッセージを送信取消する CLI。既定は dry-run(表示のみ)。
 //
-//   bun run unsend.ts <相手>                     # 自分の直近の送信を取消対象として表示するだけ
-//   bun run unsend.ts <相手> --yes               # 自分の直近の送信を取消
-//   bun run unsend.ts <相手> -m 売上 --yes        # 「売上」を含む自分の直近の送信を取消
-//   bun run unsend.ts <相手> --id <messageId> --yes
-//   bun run unsend.ts <相手> -n 50               # 遡る件数(既定 20)
-//   ACCOUNT=sub bun run unsend.ts <相手> ...     # 別アカウント(storage.sub.json)で実行
+//   bun run src/write/unsend.ts <相手>                     # 自分の直近の送信を取消対象として表示するだけ
+//   bun run src/write/unsend.ts <相手> --yes               # 自分の直近の送信を取消
+//   bun run src/write/unsend.ts <相手> -m 売上 --yes        # 「売上」を含む自分の直近の送信を取消
+//   bun run src/write/unsend.ts <相手> --id <messageId> --yes
+//   bun run src/write/unsend.ts <相手> -n 50               # 遡る件数(既定 20)
+//   ACCOUNT=sub bun run src/write/unsend.ts <相手> ...     # 別アカウント(storage/sub.json)で実行
 //
 // <相手> は表示名/自分が付けた名前の部分一致(大文字小文字無視)か mid(u.../c...)。
 // 名前が複数ヒットしても、取消対象が見つかるトークが1つだけなら続行。2つ以上なら候補を出して止まる。
 // LINE の送信取消は送信後24時間以内のみ。相手側には「送信を取り消しました」が残る。
-// 未ログイン・トークン失効時は `bun run login-linejs.ts` で QR ログイン。
+// 未ログイン・トークン失効時は `bun run src/auth/login-linejs.ts` で QR ログイン。
 
 import { loginWithAuthToken } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 import { parseArgs } from "node:util";
 
-const USAGE = "usage: bun run unsend.ts <相手の名前|mid> [-m 文字列 | --id messageId] [-n 20] [--yes]";
+const USAGE = "usage: bun run src/write/unsend.ts <相手の名前|mid> [-m 文字列 | --id messageId] [-n 20] [--yes]";
 const { values: opt, positionals } = parseArgs({
 	allowPositionals: true,
 	options: {
@@ -42,8 +42,8 @@ function die(msg: string): never {
 	process.exit(1);
 }
 
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
-const LOGIN_CMD = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : ""}bun run login-linejs.ts`;
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
+const LOGIN_CMD = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : ""}bun run src/auth/login-linejs.ts`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 if (typeof cached !== "string") die(`未ログイン(${STORAGE})。\`${LOGIN_CMD}\` で QR ログインしてください。`);

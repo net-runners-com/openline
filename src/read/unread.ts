@@ -1,16 +1,16 @@
 // 個人LINE(linejs)で「未読が溜まっているトーク」の一覧を出す CLI。読み取りのみ・既読はつけない。
 //
-//   bun run unread.ts                # メイン(storage.json)の未読トーク一覧
-//   ACCOUNT=sub2 bun run unread.ts   # 別アカウント
-//   N=5 bun run unread.ts            # 各トークの直近メッセージ表示件数(既定 3)
+//   bun run src/read/unread.ts                # メイン(storage/main.json)の未読トーク一覧
+//   ACCOUNT=sub2 bun run src/read/unread.ts   # 別アカウント
+//   N=5 bun run src/read/unread.ts            # 各トークの直近メッセージ表示件数(既定 3)
 //
 // getMessageBoxes(unreadOnly) で未読数つきのメッセージボックスを取得し、相手名・未読数・
 // 直近メッセージ(E2EE 復号)を表示する。sendChatChecked は呼ばないので未読は未読のまま。
 import { loginWithAuthToken } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
-const LOGIN = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : ""}bun run login-linejs.ts`;
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
+const LOGIN = `${process.env.ACCOUNT ? `ACCOUNT=${process.env.ACCOUNT} ` : ""}bun run src/auth/login-linejs.ts`;
 const N = Number(process.env.N ?? 3);
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");

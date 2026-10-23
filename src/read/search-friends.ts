@@ -1,9 +1,9 @@
 // 友だち一覧から名前で検索。
-//   bun run search-friends.ts <keyword>   表示名/メモに含むやつを出す
+//   bun run src/read/search-friends.ts <keyword>   表示名/メモに含むやつを出す
 import { loginWithAuthToken } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 const Q = (process.argv[2] ?? "").toLowerCase();
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 const DEVICE = ((process.env.DEVICE ?? (await storage.get(".device"))) ?? "DESKTOPWIN") as any;

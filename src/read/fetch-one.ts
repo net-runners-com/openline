@@ -1,17 +1,17 @@
 // 単一相手(mid)のトーク履歴だけを取ってきて jsonl にする。dump-logs.ts の縮小版。
-//   bun run fetch-one.ts <mid> [per]
+//   bun run src/read/fetch-one.ts <mid> [per]
 import { loginWithAuthToken } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 import { mkdirSync } from "node:fs";
 
 const MID = process.argv[2];
-if (!MID) { console.error("usage: bun run fetch-one.ts <mid> [per]"); process.exit(1); }
+if (!MID) { console.error("usage: bun run src/read/fetch-one.ts <mid> [per]"); process.exit(1); }
 const PER = Number(process.argv[3] ?? 500);
 const PAGE = 50;
 const I64_MAX = 9223372036854775807n;
 const OUTDIR = `./out/one-${MID.slice(0, 8)}-${Date.now()}`;
 
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 if (typeof cached !== "string") throw new Error(`未ログイン(${STORAGE})`);

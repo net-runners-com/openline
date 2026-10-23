@@ -1,7 +1,7 @@
 // 個人LINE(linejs)にメールアドレス+パスワードでログインし、トークンを保存する。
-//   bun run login-pw.ts                     # メイン: LINE_EMAIL / LINE_PASSWORD → storage.json
-//   ACCOUNT=sub1 bun run login-pw.ts        # 別アカウント: LINE_EMAIL_SUB1 / LINE_PASSWORD_SUB1 → storage.sub1.json
-//   ACCOUNT=sub1 EMU=1 bun run login-pw.ts  # 確認コードを Android エミュレーター上の LINE に adb で自動入力
+//   bun run src/auth/login-pw.ts                     # メイン: LINE_EMAIL / LINE_PASSWORD → storage.json
+//   ACCOUNT=sub1 bun run src/auth/login-pw.ts        # 別アカウント: LINE_EMAIL_SUB1 / LINE_PASSWORD_SUB1 → storage/sub1.json
+//   ACCOUNT=sub1 EMU=1 bun run src/auth/login-pw.ts  # 確認コードを Android エミュレーター上の LINE に adb で自動入力
 // EMU=1 のとき: エミュレーターを起動(止まっていれば)し、そのアカウントの LINE を前面に出してからログインする。
 // エミュレーター内に ACCOUNT と同名のプロファイルがあればそちらの LINE を使う(emu.ts 参照)。
 // 一度確認コードを通すと証明書(cert:<email>)が保存され、以降はコード不要。
@@ -12,7 +12,7 @@ import { enterPin, openLine, startEmulator, userIdFor } from "./emu.ts";
 const SUFFIX = process.env.ACCOUNT ? `_${process.env.ACCOUNT.toUpperCase()}` : "";
 const EMAIL = process.env[`LINE_EMAIL${SUFFIX}`], PASSWORD = process.env[`LINE_PASSWORD${SUFFIX}`];
 if (!EMAIL || !PASSWORD) throw new Error(`bot/.env に LINE_EMAIL${SUFFIX} / LINE_PASSWORD${SUFFIX} を設定してください`);
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
 
 const EMU = process.env.EMU === "1";
 if (EMU) {

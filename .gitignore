@@ -1,16 +1,11 @@
 # linejs auth tokens — LINE アカウントへのフルアクセス権。絶対にコミットしない
-storage.json
-**/storage.json
-storage.*.json
-**/storage.*.json
-.auth
+storage/
 run.log
 **/run.log
 
-# deps
+# bun / node deps
 node_modules/
-bot/node_modules/
-bot/bun.lock
+bun.lock
 
 # cloned upstream repos
 linejs/
@@ -21,8 +16,24 @@ legy-go-selfbot-dev/
 .env.*
 
 # LINE profile dump (mid / displayName など個人情報)
-bot/profile-backup.json
+profile-backup.json
 
 # webtrace のキャプチャ(HAR=認証情報を含む)とスクラッチ
 .webtrace-auth/
 test.txt
+
+# QR login images (ログイン用 URL なので念のため)
+.qr-*.png
+
+# 吸い出し先(個人アカ・PII)
+out/
+
+# tsc/eslint caches
+.cache/
+.eslintcache
+*.tsbuildinfo
+dist/
+*.tgz
+
+# OS
+.DS_Store

@@ -1,14 +1,14 @@
 // 個人LINE(linejs)に QR でログインし、トークンを保存する。
-//   bun run login-linejs.ts               # メイン → storage.json。QR を PNG で出して macOS の Preview で開く
-//   ACCOUNT=sub bun run login-linejs.ts   # 別アカウント → storage.sub.json(そのアカウントの LINE で読む)
-//   NO_OPEN=1 bun run login-linejs.ts     # PNG は書くが自動 open しない
-//   NO_IMAGE=1 bun run login-linejs.ts    # PNG を作らず URL だけ出す(スマホで URL を手入力する場合)
+//   bun run src/auth/login-linejs.ts               # メイン → storage.json。QR を PNG で出して macOS の Preview で開く
+//   ACCOUNT=sub bun run src/auth/login-linejs.ts   # 別アカウント → storage/sub.json(そのアカウントの LINE で読む)
+//   NO_OPEN=1 bun run src/auth/login-linejs.ts     # PNG は書くが自動 open しない
+//   NO_IMAGE=1 bun run src/auth/login-linejs.ts    # PNG を作らず URL だけ出す(スマホで URL を手入力する場合)
 import { loginWithQR } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 import QRCode from "qrcode";
 import { spawn } from "node:child_process";
 
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
 const QR_PATH = `./.qr-${process.env.ACCOUNT ?? "main"}.png`;
 const storage = new FileStorage(STORAGE);
 const DEVICE = (process.env.DEVICE ?? (await storage.get(".device")) ?? "DESKTOPWIN") as any;

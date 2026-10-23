@@ -1,12 +1,12 @@
 // 個人LINE(linejs)でメッセージを送る CLI。既定は dry-run(送らず表示のみ)。--yes で実送信。
 //
-//   bun run send.ts <相手> -t "本文"            # dry-run(送信内容を表示)
-//   bun run send.ts <相手> -t "本文" --yes       # 送信
-//   bun run send.ts <相手> -f draft.txt --yes    # ファイルの中身を送信
-//   ACCOUNT=sub2 bun run send.ts <相手> ...      # 別アカウント
+//   bun run src/write/send.ts <相手> -t "本文"            # dry-run(送信内容を表示)
+//   bun run src/write/send.ts <相手> -t "本文" --yes       # 送信
+//   bun run src/write/send.ts <相手> -f draft.txt --yes    # ファイルの中身を送信
+//   ACCOUNT=sub2 bun run src/write/send.ts <相手> ...      # 別アカウント
 //
 // <相手> は表示名の部分一致(友だち)か mid。グループ(c...)は名前解決できないので mid を直接指定。
-// 送信取消は bun run unsend.ts <相手> --yes(24時間以内)。
+// 送信取消は bun run src/write/unsend.ts <相手> --yes(24時間以内)。
 import { loginWithAuthToken } from "@evex/linejs";
 import { FileStorage } from "@evex/linejs/storage";
 import { parseArgs } from "node:util";
@@ -20,12 +20,12 @@ const { values: opt, positionals } = parseArgs({
 	},
 });
 function die(m: string): never { console.error(m); process.exit(1); }
-if (positionals.length !== 1) die('usage: bun run send.ts <相手の名前|mid> (-t "本文" | -f file) [--yes]');
+if (positionals.length !== 1) die('usage: bun run src/write/send.ts <相手の名前|mid> (-t "本文" | -f file) [--yes]');
 const WHO = positionals[0];
 const body = opt.file ? (await Bun.file(opt.file).text()).replace(/\n+$/, "") : opt.text;
 if (!body) die("本文がありません(-t か -f で指定)。");
 
-const STORAGE = process.env.ACCOUNT ? `./storage.${process.env.ACCOUNT}.json` : "./storage.json";
+const STORAGE = `./storage/${process.env.ACCOUNT ?? "main"}.json`;
 const storage = new FileStorage(STORAGE);
 const cached = await storage.get(".auth");
 if (typeof cached !== "string") die(`未ログイン(${STORAGE})。login-linejs.ts でログインしてください。`);
