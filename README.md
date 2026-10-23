@@ -131,3 +131,5 @@ POLL=15 bun run src/read/inbox.ts --json  # 15秒ごとに getMessageBoxes(unrea
 - サブアカウント本体: Pixel_8 エミュ内に置く。`-no-snapshot-save` は禁止(セッション破損)
 - 送信系は原則 dry-run を既定、`--yes` 明示で初めて反映
 - 認証ファイルは `.gitignore` 済み。コミット前に `git status` を確認
+
+API/プロトコル仕様の検証結果・位置情報メッセージの実際の中身・LINE の乗っ取り経路と防御は [docs/notes.md](./docs/notes.md) にまとめている。
