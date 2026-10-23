@@ -132,3 +132,76 @@ LINE はビジネス的に「日本の非技術層ユーザー数億 UI 変え�
 - Mac から実 GPS を取る: `brew install --cask corelocationcli` → システム設定で位置情報サービス許可 → `CoreLocationCLI -once -format "%latitude %longitude"`
 - GPS が取れない場合の fallback: `curl -s http://ip-api.com/json/` で ISP ゲートウェイ由来の推定座標（市町村レベル精度）
 - 逆ジオコーディング: `curl -s "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=X&lon=Y&accept-language=ja" -H "User-Agent: your-app/1.0"`
+
+## 7. CHATEVENT 削除/隠蔽の不可能性（確定）
+
+グループで発生する CHATEVENT（招待/キック/参加/退出/名前変更 等のシステム通知）を相手の画面から消す方法は **公開手段では存在しない**。徹底検証済み:
+
+### 試して全部ダメだったもの
+
+- `talk.unsendMessage(messageId)` を自分発行の CHATEVENT (C_GI 招待 / C_MR kick) に発火 → API は `OK: {}` で受理されるが、相手の LINE UI には全く反映されず依然として表示される。`contentMetadata.UPDATED_TIME` だけ更新される
+- 他人発行の CHATEVENT (C_MJ 相手の join) への unsend → `ILLEGAL_ARGUMENT: not your message`
+- `destroyMessage` / `deleteMessage` / `removeMessage` / `hideMessage` を TalkService `/S4` に対して直接叩き → `"Invalid method name"`（methods do not exist on talk service, Square のみ）
+- `editMessage` は TalkService に **存在する**（`"invalid message: null"` / `"invalid request"` を返す = method 自体はある）が args 形式不明、恐らく通常テキスト用で CHATEVENT 編集不可
+- プロフィール表示名を変更して描画キャッシュ更新 → 可能だがグローバル影響あり、Multi Profile 必要なら Premium 必須
+
+### 構造的理由
+
+CHATEVENT は `contentType=NONE` + `contentMetadata.LOC_KEY`（C_GI/C_MR/C_MJ 等）で表現され、クライアント側で LOC_KEY からローカライズして描画する仕組み。unsend フラグや UPDATED_TIME よりも **LOC_KEY に基づく描画が優先** されるため、サーバー API で何をしても表示が変わらない。公式アプリ UI にも「システム通知を取消す」操作は存在しない。
+
+### editMessage の存在
+
+- `editMessage(/S4)` は 404 ではなく thrift exception を返す = TalkService にハンドラあり
+- linejs 公開 schema には無し。LYP Premium の `MESSAGE_EDIT` 機能のバックエンドと推定
+- args は `sendMessage_args` 形状 / `{seq, messageId}` 形状 / 空 全部で `"invalid request"` → request wrapper + 未知フィールドが必要
+- 判明させるには mitmproxy で LINE 公式アプリの editMessage トラフィック捕獲が必要（下記 "LEGY ネイティブスタック" 参照）
+
+## 8. LEGY ネイティブスタックと mitm の壁
+
+LINE Android app は **独自のネットワーク層** を持ち、system HTTP proxy や system OpenSSL を経由しない:
+
+| ライブラリ | 役割 |
+|---|---|
+| `libssl3line.so` | OpenSSL 3.0 fork（LINE 専用）。SSL_write/SSL_read 等標準 API |
+| `liblegy.so` | LEGY = LINE 独自の HTTP/2 風プロトコル |
+| `libcrypto3line.so` | OpenSSL crypto fork |
+
+LEGY は TLS の内側で **さらに LECC (Line Encrypted Client Context)** という AES 層を持つ。plaintext thrift → LECC encrypt → TLS encrypt → wire の多重暗号化。
+
+### Frida 捕獲ポイント（検証済み）
+
+- `liblegy.so!lec_aes_encrypt(ctx, data_in, data_in_len, data_out, ...)` — plaintext thrift が第2引数（LECC 暗号化前）
+- `libssl3line.so!SSL_write(ssl, buf, len)` — LECC 暗号化済み bytes
+- JNI 公開関数: `Java_jp_naver_line_android_legy_encryption_LegyHmac_lec_*`
+- lazy load: liblegy/libssl3line は **ログイン後にのみプロセスに mapping される**。registration 画面段階ではまだロードされてない
+
+### 捕獲用 Frida スニペット
+
+```javascript
+const timer = setInterval(() => {
+    const legy = Process.findModuleByName('liblegy.so');
+    if (legy) {
+        Interceptor.attach(Module.findExportByName('liblegy.so', 'lec_aes_encrypt'), {
+            onEnter(args) {
+                const len = args[2].toInt32();
+                const bytes = args[1].readByteArray(Math.min(len, 8192));
+                // ここで thrift binary を解析
+            }
+        });
+        clearInterval(timer);
+    }
+}, 500);
+```
+
+### 実運用の壁
+
+Android emulator で LINE sub-device 認証を通すのは不可。**サーバー側で emulator を検出して network error を返す**:
+- `ro.kernel.qemu=1`, `ro.build.tags=dev-keys`, `ro.build.fingerprint=emu64a` 等 OS 指紋が完全に emulator を示す
+- Frida で `android.os.Build.*` と `android.os.SystemProperties.get()` を Pixel 7 偽装しても **network error が解消しない**
+- 推定: LINE が **Play Integrity API の STRONG_INTEGRITY**（hardware TEE 必須）を要求してる
+- 回避には **root 済み物理 Android デバイス + Magisk + Shamiko + Play Integrity Fix モジュール** が必要
+- emulator のみでは原理的に不可（Google 設計上の防御）
+
+### 結論
+
+CHATEVENT を相手の画面から消す公開手段は存在せず、editMessage の args を解明しても CHATEVENT には適用できない見込み。**この問題はこれ以上追わない**。
