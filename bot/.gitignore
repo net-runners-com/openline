@@ -38,3 +38,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # operation logs (個人アカ・PII)
 out/
+
+# QR login images (ログイン用 URL なので念のため)
+.qr-*.png
