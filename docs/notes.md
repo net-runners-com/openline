@@ -342,6 +342,57 @@ contentType=CHATEVENT のメッセージは **専用の中央配置+アバター
 - `MESSAGE_BACKUP` の server API (local SQLite 優先実装のため remote 直叩き経路不明)
 - `premiumBlocked` を立てる書き込み API (Contact 側は read-only field)
 
+## 11. APK decompile 完了後の深堀り (171 thrift methods 中)
+
+### 探索の統計
+- `/S4` TalkService に **171 thrift methods** 存在。これまで触ったのは ~30 本
+- 新たに通ったもの:
+
+| method | 結果 |
+|---|---|
+| `getPendingAgreements` | `{"pendingAgreements":[]}` 空。Premium 機能別の同意はここでは追えない |
+| `getConfigurations` | 巨大な configMap (サーバー side feature flags) 返却 |
+| `getServerTime` | ms unix timestamp |
+| `getExtendedProfile` | **自分の誕生日・公開レベル** (mid 引数指定しても常に自分のが返る) |
+| `getRingtone` / `getRingbackTone` | 自分の着信音設定 (未設定なら空) |
+| `getRecentFriendRequests` / `getFriendRequests` | 友だち申請 |
+| `getBuddyLive` / `getBuddyOnAir` | /S4 では "Invalid method name"、別 endpoint 要 |
+| `reportLocation` | 同じく別 endpoint |
+| `getIncrementalBackupMessages` | `"API method not capable"` = Backup 機能契約が別途必要 |
+| `getMessageEditNotice` | ERR 空 (要 args) |
+
+### Premium 機能の規約・同意ルート (configMap から判明)
+
+```
+function.premium.common.subprofile.enabled = Y
+function.premium.common.subprofile.agreement.lan = subprofilejp     # 同意名
+function.premium.common.subprofile.agreement.version = 1
+function.premium.common.unsend = Y
+function.premium.common.unsend.agreement.lan = line_premium_unsend_JP
+function.premium.common.unsend.agreement.version = 1
+function.premium.common.unsend.system.link = https://line.me/R/nv/settings/lypPremium/home?entry=unsend_s
+function.premium.lyp.service = Y
+```
+
+**→ 本当の規約同意フロー**: configMap に明記された `line://nv/settings/lypPremium/home?entry=unsend_s` などの LIFF/deep link をスマホ LINE で開くと、該当機能の規約画面に直接飛ぶ。承認後は該当機能の thrift が通る。
+
+### LINE が持つ API ホスト (抜粋)
+
+decompile から確認した全 API ホスト (`https://`):
+- `api.line.me` - 主 REST API
+- `access.line.me` - OAuth / consent
+- `liff.line.me` - LIFF app host
+- `obs.line-apps.com` - media 配信
+- `ai-friends-api-server.line-apps.com` - **AI Friends API** (未探索)
+- `contact-cc.line.me` - Contact 系
+- `uts-front.line-apps.com` - UserTicket 系?
+- `dpos-pay.line.me` / `app-payatom.line-apps.com` - LINE Pay
+- `kyc-digital-id-client-gw.line-apps.com` - KYC Digital ID
+- `vos.line-scdn.net` - VOOM/Timeline media
+- `music.line.me` / `store.line.me` / `webpos.line.me`
+
+AI Friends API (`/ai/agent`, `/ai/component`, `/ai/toolbox`) は未探索。LINE AI 系機能のバックエンド。
+
 ### 代替: route-send CLI (Multi Profile 不要の実質的ペルソナ分離)
 
 [src/write/route-send.ts](../src/write/route-send.ts) で「相手ごとにどのサブアカから送るか」を [storage/routing.json](../storage/routing.json) に登録し、送信時に自動選択する運用。実質的に Multi Profile と同じ "相手ごとに別人として振る舞う" が、サブアカウント運用 (sub1/sub2) で実現できる。Premium 不要。
