@@ -1,4 +1,5 @@
 # linejs auth tokens — LINE アカウントへのフルアクセス権。絶対にコミットしない
+/storage/routing.json
 storage/
 run.log
 **/run.log

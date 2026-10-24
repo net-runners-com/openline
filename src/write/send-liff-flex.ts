@@ -123,7 +123,37 @@ function schedulePreset() {
 	};
 }
 
-const PRESETS: Record<string, () => any> = { hello: helloPreset, rich: richPreset, schedule: schedulePreset };
+// 偽 CHATEVENT: 本物のシステム通知(C_GI/C_MR/C_MJ 等 "〇〇が××を追加しました") と
+// 見分けづらい見た目の Flex。本物の CHATEVENT を消せないので、周辺に撒いて埋没させるのが用途。
+// 複数パターンランダム送信で "どれが本物?" 状態を作る。
+function fakeChatEventPreset() {
+	// VARIANTS[Math.floor(Math.random() * VARIANTS.length)] 的に使う
+	const PATTERNS = [
+		"竹内大登（たけうちひろと）が 荒川 慧｜Kei Arakawa をグループに追加しました",
+		"荒川 慧｜Kei Arakawa がグループに参加しました",
+		"竹内大登（たけうちひろと）が 荒川 慧｜Kei Arakawa をグループから削除しました",
+		"荒川 慧｜Kei Arakawa がグループから退出しました",
+		"竹内大登（たけうちひろと）がグループ名を変更しました",
+		"荒川 慧｜Kei Arakawa がノートを投稿しました",
+	];
+	const text = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
+	return {
+		type: "flex", altText: "(system notification)",
+		contents: {
+			type: "bubble", size: "nano",
+			body: {
+				type: "box", layout: "vertical", backgroundColor: "#F0F0F0",
+				cornerRadius: "20px", paddingAll: "10px", paddingStart: "16px", paddingEnd: "16px",
+				contents: [
+					{ type: "text", text, size: "xxs", color: "#777777", align: "center", wrap: true },
+				],
+			},
+			styles: { body: { backgroundColor: "#F0F0F0" } },
+		},
+	};
+}
+
+const PRESETS: Record<string, () => any> = { hello: helloPreset, rich: richPreset, schedule: schedulePreset, chatevent: fakeChatEventPreset };
 const flex = (PRESETS[opt.preset] ?? die(`unknown preset: ${opt.preset} (available: ${Object.keys(PRESETS).join(", ")})`))();
 
 // ---- send ----
