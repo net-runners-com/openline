@@ -269,6 +269,24 @@ LIFF の Flex 送信ができるのを足がかりに、「本物の CHATEVENT (
 
 CHATEVENT と MESSAGE_EDIT に関しては LIFF 経由でも回避できない。LIFF の `chat_message.write` scope は "通常の Bot が送信できるメッセージタイプを送信する" 権限であり、"システムメッセージの改変" や "message の rewrite" は含まれない (LINE 側がそもそもそういう権限概念を提供していない)。LIFF Flex が通ったのは Flex 自体が本来 Bot で送れるメッセージタイプだったから。LIFF は "Bot が送れる物の集合" を個人アカウントに移植できるだけで、Bot でも送れないものは出せない。
 
+### editMessage の args 構造 (APK decompile で解明)
+
+LINE Android APK (jp.naver.line.android) を jadx decompile して `sources/hi8/bj.java` (editMessage_args) と `sources/hi8/j9.java` (EditMessageRequest) を発見。args schema は以下:
+
+```
+editMessage_args:
+  1: struct req → EditMessageRequest
+EditMessageRequest:
+  1: i32    reqSeq
+  2: struct message → Message (from/to/toType/id/text/contentType/contentMetadata)
+```
+
+thrift 手製 payload で `/S4 editMessage` を叩くと、以前の汎用「invalid request」ではなく **`{"1":{"1":125,"2":"non-LYP subscriber requested edit"}}`** まで到達する (= 権限チェックまで通る)。
+
+ただし main アカウントは `getDataRetention` で `productType=LYP_PREMIUM` 確認済みなのに editMessage 側では "non-LYP subscriber" 扱い。Multi Profile と同じく **スマホ公式アプリ側で機能ごとの規約同意が別途必要** と推定。
+
+→ [src/write/edit-message.ts](../src/write/edit-message.ts) に実装済み (規約同意前は NOT_LYP で止まるが args 構造は確定)。
+
 ### 代替: route-send CLI (Multi Profile 不要の実質的ペルソナ分離)
 
 [src/write/route-send.ts](../src/write/route-send.ts) で「相手ごとにどのサブアカから送るか」を [storage/routing.json](../storage/routing.json) に登録し、送信時に自動選択する運用。実質的に Multi Profile と同じ "相手ごとに別人として振る舞う" が、サブアカウント運用 (sub1/sub2) で実現できる。Premium 不要。
