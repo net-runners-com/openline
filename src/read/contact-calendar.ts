@@ -61,29 +61,32 @@ for (let i = 0; i < mids.length; i += 20) {
 }
 
 // カレンダーイベント取得 (まとめて 20 件ずつ)
+// 重要: endpoint は /S4 ではなく /RE4 (APK decompile で発見)
 type Birthday = { mid: string; name: string; year?: number; month: number; day: number; nextDate: Date; daysUntil: number };
 const birthdays: Birthday[] = [];
 for (let i = 0; i < mids.length; i += 20) {
 	const slice = mids.slice(i, i + 20);
 	try {
-		const r: any = await talk.getContactCalendarEvents({
-			request: { targetUsers: slice.map((mid) => ({ targetUserMid: mid })), syncReason: "INTERNAL" as any },
-		});
-		const events: any[] = r?.events ?? r?.contactCalendarEvents ?? [];
-		for (const ev of events) {
-			const mid = ev?.contactMid ?? ev?.mid ?? ev?.targetUserMid;
-			const bd = ev?.birthday ?? ev?.event?.birthday;
-			if (!bd || !mid) continue;
-			const month = Number(bd.month ?? 0);
-			const day = Number(bd.day ?? 0);
-			const year = bd.year ? Number(bd.year) : undefined;
-			if (!month || !day) continue;
-			// 次回誕生日の計算
-			const now = new Date();
-			let next = new Date(now.getFullYear(), month - 1, day);
-			if (next < now) next = new Date(now.getFullYear() + 1, month - 1, day);
-			const daysUntil = Math.round((next.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-			birthdays.push({ mid, name: names.get(mid) || mid.slice(0, 10), year, month, day, nextDate: next, daysUntil });
+		// 手製 thrift payload: args = [[12, 1, Request]], Request = [[15, 1, [12, [targets]]], [8, 2, syncReason]]
+		const targets = slice.map((mid) => [[11, 1, mid]]);
+		const request = [[15, 1, [12, targets]], [8, 2, 0]];
+		const args = [[12, 1, request]];
+		const r: any = await (client.base as any).request.request(args, "getContactCalendarEvents", 4, true, "/RE4");
+		for (const resp of r?.responses ?? []) {
+			const mid = String(resp?.targetUserMid ?? "");
+			const events = resp?.ContactCalendarEvents?.events ?? resp?.events ?? {};
+			for (const bd of Object.values(events) as any[]) {
+				if (!bd || !bd.month) continue;
+				const month = Number(bd.month);
+				const day = Number(bd.day ?? bd.dayOfMonth ?? 0);
+				const year = bd.year ? Number(bd.year) : undefined;
+				if (!month || !day) continue;
+				const now = new Date();
+				let next = new Date(now.getFullYear(), month - 1, day);
+				if (next < now) next = new Date(now.getFullYear() + 1, month - 1, day);
+				const daysUntil = Math.round((next.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+				birthdays.push({ mid, name: names.get(mid) || mid.slice(0, 10), year, month, day, nextDate: next, daysUntil });
+			}
 		}
 	} catch (e: any) {
 		console.error(`[warn] batch ${i}-${i + 20} fail: ${JSON.stringify(e?.data ?? {}).slice(0, 150)}`);

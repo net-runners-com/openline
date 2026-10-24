@@ -393,6 +393,42 @@ decompile から確認した全 API ホスト (`https://`):
 
 AI Friends API (`/ai/agent`, `/ai/component`, `/ai/toolbox`) は未探索。LINE AI 系機能のバックエンド。
 
+### 複数の thrift endpoint path 発見
+
+これまで `/S4` TalkService 一本と思っていたが、decompile から判明:
+
+- `/S4` - 中核 TalkService (171 methods)
+- `/RE4` - **Related Entity Service** (`getContactCalendarEvents` 等、別 service)
+- `/PFS4` - Multi Profile (既知)
+- `/P4` - Push 系? (想定)
+- `/BA` - Buddy / Account (`getBuddyLive` 等、想定)
+- `/LN3` - Location Nearby 3? (`reportLocation` 想定)
+- `/EXT/line-premium/common/thrift/status` - Premium status
+
+**重要**: `getContactCalendarEvents` を `/S4` で叩いても method unknown っぽく失敗する。`/RE4` に送って成功。他の "/S4 に無い" メソッドも別 path を見つける必要あり。
+
+### 動作確認済み 無引数 thrift methods
+
+| method | path | 返却 |
+|---|---|---|
+| `getServerTime` | /S4 | timestamp ms |
+| `getConfigurations` | /S4 | 巨大 configMap (feature flags) |
+| `getPendingAgreements` | /S4 | 空 (Premium 機能別は別経路) |
+| `getRSAKeyInfo` | /S4 | 認証用 RSA 公開鍵 `{keynm, nvalue, evalue, sessionKey}` |
+| `getProfile` | /S4 | 自分の完全プロフィール (phone encrypted, userid, regionCode, displayName, picturePath 等) |
+| `getExtendedProfile` | /S4 | 自分の誕生日・公開レベル |
+| `getRingtone` / `getRingbackTone` | /S4 | 自分の着信音設定 |
+| `getRecentFriendRequests` / `getFriendRequests` | /S4 | 友だち申請 |
+| `noop` | /S4 | health check (何も返さない) |
+
+### 実世界データ観察
+
+- **友だち 301 人のうち、誕生日公開してるのは 0 人**。LINE の誕生日機能は実運用でほぼ使われてない
+- Follow 機能はサーバー終了済み
+- Multi Profile は Y (有効) だが未加入ユーザーはサーバー側で `NOT_PREMIUM`
+- `function.premium.lyp.album = N` でアルバムは Premium 対象外 (無料)
+- `function.lab.safari = Y` でサファリ用の labs 機能あり
+
 ### 代替: route-send CLI (Multi Profile 不要の実質的ペルソナ分離)
 
 [src/write/route-send.ts](../src/write/route-send.ts) で「相手ごとにどのサブアカから送るか」を [storage/routing.json](../storage/routing.json) に登録し、送信時に自動選択する運用。実質的に Multi Profile と同じ "相手ごとに別人として振る舞う" が、サブアカウント運用 (sub1/sub2) で実現できる。Premium 不要。
