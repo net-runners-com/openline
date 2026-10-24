@@ -205,3 +205,40 @@ Android emulator で LINE sub-device 認証を通すのは不可。**サーバ�
 ### 結論
 
 CHATEVENT を相手の画面から消す公開手段は存在せず、editMessage の args を解明しても CHATEVENT には適用できない見込み。**この問題はこれ以上追わない**。
+
+## 9. LIFF 経由 `/message/v3/share` で送れるメッセージタイプ (実証)
+
+デフォルト LIFF (`2006747340-AoraPvdD` = @evex land) 経由で個人アカから **Bot 専用タイプを含む 10 種類** が送信可能と確認。openline-test グループに実機送信して動作確認済み。
+
+| タイプ | 動作 | 備考 |
+|---|---|---|
+| text | ✓ | 普通のテキスト。talk.sendMessage でも可 |
+| image | ✓ | `originalContentUrl` + `previewImageUrl` を URL 指定、アップロード不要 |
+| video | ✓ | URL 指定 |
+| audio | ✓ | URL + `duration` ms |
+| sticker | ✓ | packageId + stickerId。**自分が所有してないパックも送信成功**（例: 11537/52002734） |
+| location | ✓ | title/address/latitude/longitude |
+| imagemap | ✗ | `'messages' is invalid.` デフォルト LIFF の scope に含まれてない模様。自前 LIFF 登録で解決可能 |
+| template (buttons) | ✓ | **Bot 専用機能**。thumbnailImageUrl + title + text + actions |
+| template (confirm) | ✓ | **Bot 専用機能**。はい/いいえ ダイアログ |
+| template (carousel) | ✓ | **Bot 専用機能**。複数カード横スライド |
+| flex | ✓ | 既に別節で記録済み |
+
+### 制約（LIFF share 全般）
+
+- **action type は `uri` のみ**。`message` / `postback` / `datetimepicker` は `INVALID_MESSAGE` で拒否される（送信元が bot でないので戻り先が無い）
+- **宛先は自分の mid 不可** (`INVALID_RECEIVER`)。friend mid or group mid のみ
+- **rate limit** 短時間に連続送信は `RateLimit has exceeded`。2秒間隔推奨
+- **消費する channel 権限**: `chat_message.write` scope (LIFF 初回使用時に consent 必須)
+
+### CLI
+
+- [src/write/send-liff-flex.ts](../src/write/send-liff-flex.ts): Flex 特化、preset: hello/rich/schedule
+- [src/write/send-liff-all.ts](../src/write/send-liff-all.ts): 全タイプを batch 送信、`--types=` で選択可。デモ用の自分だけ入ってる空グループ(例: openline-test)に送って Keep 代わりに使うのが実用的
+
+### 実用的な「自分へのメモ」運用
+
+LINE Keep Memo (自分へのメッセージ) は LIFF share で宛先指定不可。代替として:
+1. 自分だけメンバーの空グループを作成（`talk.createChat({type:"GROUP", name:"メモ", targetUserMids:[]})` でも作れる）
+2. そのグループに send-liff-all.ts などで送信
+3. 必要なら LINE 本体 UI 上で「Keep に保存」で個別移動
