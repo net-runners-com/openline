@@ -242,3 +242,33 @@ LINE Keep Memo (自分へのメッセージ) は LIFF share で宛先指定不�
 1. 自分だけメンバーの空グループを作成（`talk.createChat({type:"GROUP", name:"メモ", targetUserMids:[]})` でも作れる）
 2. そのグループに send-liff-all.ts などで送信
 3. 必要なら LINE 本体 UI 上で「Keep に保存」で個別移動
+
+## 10. 偽 CHATEVENT 戦略の検証 (= 不成立)
+
+LIFF の Flex 送信ができるのを足がかりに、「本物の CHATEVENT (システム通知) を消せないなら、見た目を真似た Flex を周辺に撒いて埋没させる」という発想を実験。[src/write/send-liff-flex.ts](../src/write/send-liff-flex.ts) に `--preset chatevent` を追加して、小字グレー pill 風の Flex を送れるようにして実機 iPhone LINE で比較した。
+
+### 結果: UI 描画が根本的に違う
+
+| 項目 | 本物 CHATEVENT (`contentType=CHATEVENT`) | 偽物 Flex (`contentType=FLEX`) |
+|---|---|---|
+| 配置 | 画面中央 | 送信者側（左/右）に寄る |
+| 背景 | 濃いグレー/黒 pill 型 | 明るいグレー角丸バブル |
+| 送信者アバター | **非表示（特別扱い）** | 送信者の顔アイコンが出る |
+| 送信者名 | **非表示** | 「竹内大登」等が出る |
+| 時刻 | 本文に埋め込み | 横に別表示 |
+
+**原因**: LINE クライアントは `contentType` を見て CHATEVENT だけ「システム通知」用の特別レンダリングを適用する。他のメッセージタイプ (Flex / Text / Image 等) ではこの特別描画は走らない。Flex のスタイル調整 (色・パディング・サイズ) をいくら追い込んでも、送信者アバター/名前の有無とバブル配置の違いは埋められない。
+
+### 使えるとしたら
+
+- 完全模倣は不可だが、**文字情報だけ混ぜる** 用途 (履歴検索でノイズになる、斜め読みでかろうじて紛れる) ならそれなり
+- 戦略としては `--preset chatevent` を複数回送って本物の前後に撒く形で "ごちゃごちゃ感" を演出するくらい
+- 本気で「相手の画面から CHATEVENT を消したい」なら、ここで示した通り構造的に不可能
+
+### LIFF 抜け道の限界
+
+CHATEVENT と MESSAGE_EDIT に関しては LIFF 経由でも回避できない。LIFF の `chat_message.write` scope は "通常の Bot が送信できるメッセージタイプを送信する" 権限であり、"システムメッセージの改変" や "message の rewrite" は含まれない (LINE 側がそもそもそういう権限概念を提供していない)。LIFF Flex が通ったのは Flex 自体が本来 Bot で送れるメッセージタイプだったから。LIFF は "Bot が送れる物の集合" を個人アカウントに移植できるだけで、Bot でも送れないものは出せない。
+
+### 代替: route-send CLI (Multi Profile 不要の実質的ペルソナ分離)
+
+[src/write/route-send.ts](../src/write/route-send.ts) で「相手ごとにどのサブアカから送るか」を [storage/routing.json](../storage/routing.json) に登録し、送信時に自動選択する運用。実質的に Multi Profile と同じ "相手ごとに別人として振る舞う" が、サブアカウント運用 (sub1/sub2) で実現できる。Premium 不要。
