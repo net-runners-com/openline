@@ -311,6 +311,37 @@ LINE サーバー側で LYP Premium 機能アクセスを拒否する際の共�
 - 同意後はサーバー側のユーザーフラグが更新され、API 経由でも使えるようになる
 - Mac LINE / Desktop LINE には多くの Premium 機能 UI が無いので、同意にはスマホ本体 LINE が必須
 
+### LECC (Line Encrypted Client Context) 実装詳細
+
+APK から LegyHmac クラス (`sources/jp/naver/line/android/legy/encryption/LegyHmac.java`) 発見:
+
+```java
+public class LegyHmac {
+    public native byte[] hmac(byte[] bArr, byte[] bArr2);
+    public native int lec_aes_decrypt(byte[] ctx, int version, long serial, byte[] in, byte[] out, byte[] mac);
+    public native int lec_aes_encrypt(byte[] ctx, int version, long serial, byte[] in, byte[] out, byte[] mac);
+    public native int lec_get_serialno(byte[] bArr);
+    public native int lec_handshake_client_finish(byte[] bArr, byte[] bArr2, byte[] bArr3, byte[] bArr4);
+    public native int lec_handshake_client_start(int version, byte[] bArr, byte[] bArr2);
+    public native int lec_prepare_xfs(byte[] bArr, byte[] bArr2, byte[] bArr3);
+}
+```
+
+6引数の `lec_aes_encrypt(ctx, version, serial, in, out, mac)` が LECC 暗号化のエントリ。
+Frida hook は arg[3] (in 平文) + arg[2] (serial) で thrift payload を dump できる。
+
+### CHATEVENT の UI 描画 (再確認)
+
+`sources/na8/c.java` に enum (`na8.c.CHATEVENT = cVar14` 値 13) 定義。
+`sources/xe8/c.java` の switch で `hi8.q7.CHATEVENT.ordinal() = 19` に分岐 →
+contentType=CHATEVENT のメッセージは **専用の中央配置+アバター非表示の UI コンポーネントで描画** される。他の contentType ではこの switch case には入らない = Flex では完全模倣不可の決定的証拠。
+
+### 未解明 (TODO)
+
+- `scheduleMessage` の remote endpoint URL (kotlin coroutine 由来の難読化で地上 grep では見えず、REA/JEB 必要)
+- `MESSAGE_BACKUP` の server API (local SQLite 優先実装のため remote 直叩き経路不明)
+- `premiumBlocked` を立てる書き込み API (Contact 側は read-only field)
+
 ### 代替: route-send CLI (Multi Profile 不要の実質的ペルソナ分離)
 
 [src/write/route-send.ts](../src/write/route-send.ts) で「相手ごとにどのサブアカから送るか」を [storage/routing.json](../storage/routing.json) に登録し、送信時に自動選択する運用。実質的に Multi Profile と同じ "相手ごとに別人として振る舞う" が、サブアカウント運用 (sub1/sub2) で実現できる。Premium 不要。
