@@ -287,6 +287,30 @@ thrift 手製 payload で `/S4 editMessage` を叩くと、以前の汎用「inv
 
 → [src/write/edit-message.ts](../src/write/edit-message.ts) に実装済み (規約同意前は NOT_LYP で止まるが args 構造は確定)。
 
+### silentlyUnsendMessage (Premium 通知なしで送信取消)
+
+同じく APK decompile (`sources/hi8/oo.java` / `sources/hi8/ch.java`) で schema 発見:
+
+```
+silentlyUnsendMessage_args: { silentlyUnsendMessageRequest: { reqSeq: i32, messageId: string } }
+```
+
+叩くと `{"1":{"1":125,"2":"non-LYP subscriber requested silent unsend"}}` → args 正解、Premium 規約同意前はブロック。[src/write/silent-unsend.ts](../src/write/silent-unsend.ts) に実装。
+
+### error code 125 = non-LYP subscriber (推定)
+
+LINE サーバー側で LYP Premium 機能アクセスを拒否する際の共通エラーコードが **125** のようだ。
+- `createMultiProfile` → `NOT_PREMIUM` (別フォーマット)
+- `editMessage` → `code 125 "non-LYP subscriber requested edit"`
+- `silentlyUnsendMessage` → `code 125 "non-LYP subscriber requested silent unsend"`
+
+### Premium 系機能の規約同意フロー (推定)
+
+- 加入自体 (LYP Premium 購読) ≠ 個別機能の利用権
+- 各機能 (MESSAGE_EDIT / SUBPROFILE / PREMIUM_UNSEND 等) は **スマホ公式アプリ UI で機能に初回アクセスすると規約同意ダイアログが出てそこで accept が必要**
+- 同意後はサーバー側のユーザーフラグが更新され、API 経由でも使えるようになる
+- Mac LINE / Desktop LINE には多くの Premium 機能 UI が無いので、同意にはスマホ本体 LINE が必須
+
 ### 代替: route-send CLI (Multi Profile 不要の実質的ペルソナ分離)
 
 [src/write/route-send.ts](../src/write/route-send.ts) で「相手ごとにどのサブアカから送るか」を [storage/routing.json](../storage/routing.json) に登録し、送信時に自動選択する運用。実質的に Multi Profile と同じ "相手ごとに別人として振る舞う" が、サブアカウント運用 (sub1/sub2) で実現できる。Premium 不要。
